@@ -1,0 +1,469 @@
+22h36 Edition critique XML-TEI  (Maïeul)
+En 1988 le package edmac qui était un ensemble de macro pour latex.
+2003, Ledmac, port pour LaTeX
+2012 Edelmac (version Rouquette) -> Permet de personnaliser plus facilement les styles (seule utilisée à ce jour) 
+
+Contenu du paquet (fonctionnalités)
+Definition d'un text avec des ligne numérotées, ou on est capable les lemmes 
+Portions de texte (lemma) auquels on peut rattacher des commentaires (notes de bas de page ou de fin de texte)
+/!\ L'outil autorise la mise en regard de plusieurs langues même si le nombre ne peut excéder quatre. Le plus classique reste toutefois 2 langues (même si plus est courant)
+Pas d'encodage sémantique, mais des travaux en court de la part de Maïeul, (edelform), qui est encore a revoir, mais le travail ne se fait apas au fils de l'eau, dans le mesure où il voulais étudier différent cas de figure des besoins. Un exemple par exemple de début d'encodage sémantique serait de proposer des procédure lors de la "compilation" LATEX pour trouver les mots voisins,
+Maieul pointe la limite du format papier pour faire apparaître les différentes versions des éditions critiques. 
+
+
+Au lieu d'encore réinventer la route pourquoi ne pas utiliser la XML-TEI ? 
+Des feuilles de stiles TEI ont été créer par Seb RaTz qui fait aussi du LATEX  mais les feuilles de style souffrent de quelques limitations (par exemple, quand il manque un mot dans une version, le "omit" servant à indiquer le mot manqué n'est pas pris en compte dans l'automatisme).
+
+Jeromnimo Leal And Gianluca Pignalberi Edizioni critiche Guida alla composizion con il proprio compiutor Rome, 2012
+
+L'hubris
+
+
+Et le support est en anglais
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+10:03 R et LaTeX (Joël et François)
+
+Assez longtemps que R et LaTeX interagisse. Pendant lgt interface sweawe, depuis deux-trois ans KnittR (utilisé à 99 % entre R et LaTeX,http://yihui.name/knitr/,  ftp://ftp.tex.ac.uk/tex-archive/fonts/knitting/docs/knitting-doc.pdf).
+Dans les options de RStudio on peut choisir quel moteur on utilise. 
+Principe de base : avoir du LaTeX dans lequel des bouts (chunks) interprété par R, qui ressort du LaTeX. Utilise la syntaxe noweb.
+
+
+Dans RStudio, ouvrir fichier RSweawe (nom = héritage historique)
+Par défaut mini-entete LaTeX : class, environnement document.
+
+Principe on écrit un document en (Xe)(La)TeX classique. Là dedans on va insérer du R. Avant de compiler le LaTeX, on va demander à R d'interpréter un bout de R, sortira du .tex. 
+Tout ce qui est LaTeX est gérée classiquement. Il faut avoir une distrib classique sur la machine.
+
+Deux manières d'intégrer :
+    1. Inline (au milieu de paragraphe)
+    2. Chunks (en dehor de paragraphe)
+No R
+```` 
+<<chunkX,options>>=
+##code R
+2+2 
+@
+````
+
+Extension par défaut .rnw.
+
+Deux manières :
+    - 1. Demander à RStudio de faire les deux compilations à la suite : met la source et le résultats. Avec KnitR les résultats sont précédés du # (commentaire)
+    - 2. (Svt conseillé). En deux étapes :
+a. S'assurer qu'on dans le bon rep travail (ds RSTudio). Charger la librairie Knitr. Pour simplement passer du .rnw->-tex : frapper knit. Vous donne un log (assez verbeux). 
+b. Compiler le tex (classiquement)
+
+Notes : tt les chunks sont interprétés dans la même session R
+
+R CMD Stangle : permet d'extraire le R d'un .rnw = des outils sont dispo pour extraire d'un ficher knitR 
+
+Petite anedocte : KnitR se marie avec Python
+
+Les options que l'on peut passer au chunks : dans RStudio, les propose lors de la rédaction. Voir la doc de knittR sur le site. Toutes les options sont évalués par R (True,False, conditions logique)
+Queqleus exemples :
+- n'afficher que le résultat et pas la source : echo=false
+- masquer le fond de couleur
+- par défaut colore le code un peu long
+
+Sorti sous forme de tableau. KnitR ne sait pas pour le moment le faire. Il faut utiliser des fonctions R qui fait cela, par exemple la bibliothèque Hmisc. Fonction latex(objet)->source latex tableau (par défaut par un longtable). Mais latex() sort du tex brut, donc au niveau de KnitR il faut passse l'option result='asis'
+
+Bon à savoir : quand KnitR, il ajoute également des choses automatiquement dans le préambule. Attention dans le cas où on n'a pas de préambule : il faut le faire soi même.
+
+Exemple de code
+
+\documentclass{article}
+
+\begin{document}
+
+Un nouveau document.
+
+<<chunk1,echo=FALSE,message=FALSE,results='asis'>>=
+2 + 2 
+# source("monscript.R")
+df <- data.frame(a=c(1,2), b=c(3,4))
+library(Hmisc)
+latex(df, file="")
+@
+
+
+\end{document}
+
+Fin de l'exemple
+
+Comment on insère du R inline \Sexpr(<expression>). 
+
+KnittR gère bien les sorti en fichier pdf/png etc. : 
+    <<chunk2, dev='pdf'>>=
+    plot(df)
+    @
+
+Par défaut te le sort comme un figure et pas comme un float. Pour avoir un float
+
+    <<chunk2, dev='pdf',fig.cap="Un graphique">>=
+    plot(df)
+    @
+
+Si on veut deux captions ≠ pour la même chose
+
+
+
+<<chunk2, dev='pdf', echo=FALSE,fig.cap=c("Un graphique", "Un autre graphique")>>=
+plot(df)
+
+library(ggplot2)
+ggplot(df, aes(x=a, y=b)) + geom_point()
+
+@
+
+
+Par défaut il te sort les messages d'erreurs dans le pdf
+
+Si on a tt le tps les mêmes options dans les chunks on peut les passer en début de documents (voir doc).
+
+Exemple d'options globales :
+    
+    <<preinit, include=FALSE>>=
+opts_chunk$set(fig.path='figure/',cache.path='cache/',cache=TRUE,autodep=TRUE,echo=FALSE,warning=FALSE,message=FALSE,dev='cairo_pdf', dev.args=list(family='Linux Libertine O'), out.width='\\textwidth')
+dep_auto()
+knit_hooks$set(error = function(x, options) stop(x))
+@
+
+
+Quand on est sur doc volumineux, on a une option dans KnitR qui permet de mettre en cache une évaluation R. cache=TRUE
+Ne réévalue que si le chunk a changé. En théorie sait gérer les dépendances (mais 10% de cas où cela ne marche pas).
+
+Attention pour les tailles de figures :
+- fig.width s'applique à la génération de la figure elle même (par défaut 7 pouces sur 7 pouces)
+- out.width détermine la taille dans le pdf finale, joue sur les paramètres d'appel dans le .tex  (expression latex : out.witdh='0.5\\textwidth') (double \\ pour éviter que R vire le \ dans le .tex qu'il génére)
+
+
+Un makefile :
+    
+    .SUFFIXES: .tex .pdf .Rnw .R
+
+MAIN = These
+RNWINCLUDES = Chapitre3 replication replication2 tableau2 replication3 notice distance Kramer
+TEX = $(RNWINCLUDES:=.tex) formatAndDefsPrint.tex TitlePage.tex Chapitre0.tex Chapitre1.tex Chapitre2.tex Chapitre3.tex Chapitre4.tex Chapitre5.tex Annexe1.tex 
+RFILES = $(RNWINCLUDES:=.R)
+RNWFILES = $(INCLUDES:=.Rnw)
+LATEX = latexmk -silent
+NOMEN = $(MAIN).nlo -s nomencl.ist -o $(MAIN).nls
+CLEAN = rm -f 
+TOCLEAN = *.blg *.bbl *.brf *.idx *.ind *.mtc* *.toc *.out *.log *.aux *.pdf *.dvi *.rbf *.ilg *.maf *.mtc *.mtc* *.nlc *.nlo *.nlc *.nls run.xml
+
+all: $(MAIN).pdf
+
+R: $(RFILES)
+
+view: all
+        okular $(MAIN).pdf
+
+count: all
+        pdftotext $(MAIN).pdf -enc UTF-8 - | wc -m
+
+.Rnw.R:
+        R CMD Stangle $< > sources/$*.R
+
+.Rnw.tex:
+        Rscript -e "library(knitr); knit('$*.Rnw', '$*.tex')" 
+
+
+$(MAIN).pdf: $(TEX) $(MAIN).tex StyleThese.bst StyleThese.cls biblio/These.bib biblio/these.bst Makefile
+        $(LATEX) $(MAIN).tex
+
+.PHONY: clean
+
+clean:
+        $(CLEAN) $(TOCLEAN) 
+
+
+
+* * *
+
+François nous montre des exemples de R+ knitr pour produire du HTML :
+    
+    demo R + knitr + Markdown (sorties HTML)
+    
+    Installation : Joël vous l'a montré
+    Sources : https://github.com/briatte/ida
+    Rendus : http://f.briatte.org/teaching/ida/
+    
+    demo R + Slidify (sorties HTML5)
+    
+    Installation : http://slidify.org/start.html
+    Source : https://github.com/christophergandrud/Introduction_to_Statistics_and_Data_Analysis_Yonsei
+
+Le code vu avec François dans sa version qui fonctionne sous Linux (corrections de Joël): http://pastebin.com/apa4Qa6D (merci Joël !)
+
+URL pour découvrir R : https://www.youtube.com/playlist?list=PLOU2XLYxmsIK9qQfztXeybpHvru-TrqAP (Google developers)
+
+* * *
+
+
+
+--- Question BEAMER
+
+trouver le bon logiciel pour avoir les notes sur un écran et la diapo ailleurs: https://launchpad.net/~lissyx/+archive/qpdfpresenterconsole-ppa
+QPDF Presenter Console (penser à inverser les écrans dans les paramètres de QPDF si les écrans sont inversés)
+
+Autres posibilités : pdf-presenter-console, impressive
+
+
+Code Supertabular pour un tableau propre? sur plusieurs pages:
+Exemple:    
+    
+ \tablefirsthead{\hline \multicolumn{1}{|c}{\bf Doctrine}
+& \multicolumn{1}{|c|}{\bf Sens}
+& \multicolumn{1}{c|}{\bf Justification typique}\\ \hline}
+\tablehead{\hline \multicolumn{3}{|l|}{\small\sl Suite du tableau pr\'ec\'edent}
+\\ \hline \multicolumn{1}{|c}{\bf Doctrine}
+& \multicolumn{1}{|c|}{\bf Sens}
+& \multicolumn{1}{c|}{\bf Justification typique}\\ \hline}
+\tabletail{\hline \multicolumn{3}{|r|}{Suite du tableau \`a la page suivante} \\ \hline}
+\tablelasttail{\hline}
+\bottomcaption{Les racines du \emph{New Public Management} (adapt\'e de \cite{hood_1991})}
+
+
+\begin{supertabular}{|p{5cm}|p{5cm}|p{5cm}|}
+
+\hline Faire venir les professionnels du management dans la gestion publique. & Dirigeants ayant les mains libres pour g\'erer. & 
+L'\'evaluation requiert une personne pr\'ecise et non la diffusion des pouvoirs.\\
+\hline Outils de mesure de la performance explicites. & D\'efinition d'objectifs et de buts quantitatifs pr\'ecis. & L'\'evaluation 
+n\'ecessite des objectifs pr\'ecis.\\
+\hline Une grande attention port\'ee aux r\'esultats. & La politique de r\'ecompense est associ\'ee aux r\'esultats mesur\'es et non \`a
+la logique bureaucratique. & Focalisation sur les r\'esultats plut\^ot que sur les proc\'edures. \\
+\hline Tendance \`a l'autonomie des unit\'es dans le secteur public. & Casser la structure monolithique en petites entit\'es
+entrepreneuriales autonomes. & Besoin de cr\'eer des unit\'es \enquote{manageables}. \\
+\hline Attention port\'ee \`a la mise en place d'une comp\'etition entre les diff\'erents acteurs du secteur public. & Tendance aux
+contrats renouvelables. & La rivalit\'e produit des co\^uts plus faibles.\\
+\hline Importation des modes de management du priv\'e. & Plus de flexibilit\'e. & Besoin d'utiliser des m\'ethodes \enquote{\'eprouv\'ees
+du secteur priv\'e}. \\
+\hline Encouragements \`a une meilleure discipline et \`a une meilleure utilisation des ressources. & R\'esistance aux demandes des 
+syndicats, coupes dans les budgets. etc. & Faire mieux avec moins. \\
+\hline
+
+\end{supertabular}
+   
+
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+Maïeul : personnaliser des styles biblatex
+Sera sur le repo github
+
+
+deux manières différentes de faire des styles biblatex
+
+dans le préambule ou en fichiers style distribuables : .cbx (citation) .bbx (bibliographie) .lbx (localisation)
+S'inspirer des styles par défaut
+
+Path: texmf-dist/tex/latex/biblatex (dans TeXLive) 
+
+Types de fichiers : 
+    .def réglages communs à tous les styles -> À la racine (à l'inverse des suivants qui dépendent de chaque style)
+    .bbx biblio finale
+    .cbx citations
+    .lbx localisation/chaînes de langues
+
+Driver : description du formatage d'un type d'entrée (Book, Article)
+Macro: sous-description de formatage (une ou plusieurs entrées, ex: date+publisher)
+Unité : sous division d'une référence bibliographique. Bien souvent séparé par des signes bibliographiques
+Commande de séparation
+
+types de champs:
+    Name : personne morale ou physique
+    List : tout champ pouvant avoir des valeurs séparés par "and" (sauf noms)
+    Field : tout autre champ
+    
+
+Name: Nom (auteur)
+List: 
+Field    
+
+Attention, il y a des alias : un style de biblio qui en appelle un autre ; entre formatages de champs, noms, listes ; entre formatage de type ; entre affectation de type champs (avec Biber).
+
+On peut personnaliser à plusieurs niveaux:
+    chaînes de langues à redéfinir
+    commandes biblatex à redéfinir : avec \renewcommand
+      \renewcommand{\newunitpunct}[0]{\addcomma\addspace}
+\renewcommand{\subtitlepunct}[0]{\addspace\addcolon\addspace}
+%% Liste dans la documentation de BibLaTeX
+Formatage des champs avec  \DeclareFieldFormat
+Formatage des noms : compliqué
+Formatage des listes : encore plus compliqué !
+Macros : \renewbibmacro
+Drivers (pire que les listes et les macros)
+
+Bon à savoir : \bibliography uniquement en préambule
+
+* * *
+
+"En Suisse, l'armée organise des trucs sous les montagnes" (Joël)
+"LaTeX c'est comme apprendre à conduire, mais le permis, ça ne dure qu'un an, alors que LaTeX…" (Fil)
+"On est des barbus dans une grotte. On n'est pas tous barbus, mais on est tous dans une grotte." (Étienne)
+"Emacs c'est comme la Kabbale, les gens qui sont rentrés dedans disent que c'est très bien." (Fr.)
+"LaTeX. Avoir des rapports. Avec Gutenberg." (Étienne)
+"Un épidémiologiste c'est quelqu'un qui réduit l'humanité à un tableau à quatre cases" (Fil) 
+
+Devenir LaTeX SHS. "Evangelisation dans le domaine de SHS"
+"En SHS on apprend à utiliser des logiciels, pas à utiliser un ordinateur"
+
+Comment montrer que LATEX 
+- Avantage d'apprendre :
+ - Biblio
+- Tableaux/figure
+- Edtion critique
+Gestion des gabari de mémoire (thèse). 
+
+Ne rien supprimer de l'intelligence du processus, donc fournir les bon outils... des bons gabarits 
+
+Quels sont les outils ? 
+Biblio, édition critiques
+Gestion
+
+Le truc qui ne marche pas sous LaTeX c'est le message d'erreur... alors que déjà en SHS la logique de debugging.
+
+Un pack pour le doctorant qui commence (humanité classique, un template géo), tuto video
+organisation de formation... 
+
+
+Site format portail:
+    tuto vidéo des trucs emmer* en Word et simple en LaTeX (text en parallèles, workflow R-Latex)
+- format du tuto :
+- ce que veux produire 
+- préambule
+- code
+- commentaire au dessus
+Exemples de tuto
+- traductions text en //
+- écriture en langues non latines (type hébreux)
+- tuto (vidéo ?)
+-tuto git
+-annuaires de compétences
+- stacxe overflow en francais
+- gabarit articles
+Rencontres :
+- Evangelisation : Où ? localement des référents
+- un pack pour proposer un support de cours, égalitR 
+
+un portail, avec éventuellement un forum, 
+
+= = = EXEMPLE TEMPLATE MODULAIRE (site Web genre "doc ggplot2" + interface Bootstrap d'assemblage des fichiers du gabarit) = = =
+
+%%% étapes de paramétrage, avec choix par défaut :
+
+    %%% PAGE
+    %%% A1 = type de document (article)
+    %%% A2 = langue (français ; proposer de rajouter langues)
+    %%% A3 = encodage (utf8)
+    %%% A4 = géométrie (a4 ; proposer de régler les marges)
+
+    %%% TEXTE
+    %%% B1 = taille et espacement de texte (proposer 11/11 * 1.15)
+    %%% B2 = fonts : serif, mono, sans (libertine/opensans)
+    %%% B3 = titres : bold, italic, sans/serif, uppercase, smallcaps
+    %%% B4 = réglages biblio. (ex. style biblatex, nb. de colonnes, avec option "advanced" pour les éditions critiques !)
+
+    %%% ELEMENTS
+    %%% C1 = options pour les tableaux (style unique, par ex. double ligne noire en haut, page à part)
+    %%% C2 = options pour les figures (idem, ex. deux figures/page)
+    %%% C3 = options pour les boites
+    %%% C4 = formatage avancé (quotation, equation, etc.)
+
+    %%% PDF
+    %%% D1 = nb. de chapitres et d'annexes
+    %%% D2 = metadata
+    %%% D3 = réglages couleur hyperref
+    %%% D4 = tableaux, figures, sommaire, index
+
+    %%% COUV (preview de \maketitle, pré-rempli avec le metadata)
+
+    %%% (possibilité de publier le template à une adresse fixe ?)
+
+%%% exemple de préambule :
+
+%!TEX TS-program = xelatex
+%!TEX encoding = UTF-8 Unicode
+
+\documentclass[11pt]{article}
+\usepackage{fontspec,xunicode}
+
+\usepackage{tikz}
+\usetikzlibrary{fit}                    % fitting shapes to coordinates
+\usetikzlibrary{backgrounds}    % drawing the background after the foreground
+
+% PREAMBLE
+\usepackage[frenchb]{babel}
+\usepackage[babel,french=guillemets]{csquotes}
+\MakeOuterQuote{"}
+\frenchspacing
+
+% LAYOUT
+\usepackage{geometry, multicol} 
+\geometry{a4paper, textwidth=14cm, textheight=22.7cm, marginparsep=7pt, marginparwidth=.6in}
+
+\usepackage{setspace}
+\setlength{\parskip}{11pt}
+
+\usepackage{graphicx}
+\graphicspath{{fig/}}
+
+% BIB
+\usepackage[babel=hyphen, natbib, style=authoryear-comp]{biblatex} % strict,backend=bibtex8,babel=other,bibencoding=inputenc
+\bibliography{...}
+
+% FONTS
+\defaultfontfeatures{Mapping=tex-text} % converts LaTeX specials ("quotes" --- dashes etc.) to unicode
+\setromanfont[Ligatures={Common},Numbers={OldStyle}]{Scala} % Sabon LT Std
+\setmonofont[]{Menlo} % Scala
+\setsansfont[Scale=0.9]{Scala} % Myriad Pro 
+
+% PDF SETTINGS
+\usepackage{color}
+\definecolor{darkblue}{rgb}{0,0,0.50}
+\usepackage[colorlinks=true]{hyperref}  
+\hypersetup{linkcolor=darkblue,citecolor=darkblue,filecolor=darkblue,urlcolor=darkblue}
+
+% HEADINGS
+\usepackage{sectsty} 
+\usepackage[normalem]{ulem} 
+\sectionfont{\sffamily\bfseries\Large} 
+\subsectionfont{\sffamily\bfseries\upshape\large}
+
+%%% todo :
+%%% 1- découper un template de base, créer des variantes, tester
+%%% 2- monter une interface graphique sur YAML (suggestion Maïeul)
+%%% 3- questions difficiles (ex. comment faire choisir les polices ?)
+
+= = =
+
+
+Maïeul : créer ses propres classes et packages 
+=====================================
+
+
+Classes -> besoin éditorial
+Package -> besoin fonctionnel
+
+On a des arobases dans les classes et packages qui dénotent les commandes internes, non accessibles aux utilisateurs
+
+\NeedsTexFormat{LaTeX2e}
+\ProvidesClass{classe}[date v0.1 Nom]
+
+\LoadClassWithOptions{classe} (passe les options passées à la classe appelante
+ou
+\LoadClass[options]{classe}
+
+ou charger un package
+
+\RequirePacake[options]{package}
+
+\DeclareOption{option}{code}
+
+Packages utiles pour créer des classes : geometry, fancyhdr, TikZ, xargs, xkeyval, etoolbox
+
+
+Coloration syntaxique dans LaTeX : Minted
